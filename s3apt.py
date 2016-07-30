@@ -104,9 +104,6 @@ def read_control_data(deb_obj):
     finally:
         os.remove(tmp)
 
-    return "fake control data.."
-
-
 
 def get_cached_control_data(deb_obj):
     """
