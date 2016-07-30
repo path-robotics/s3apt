@@ -217,14 +217,14 @@ def lambda_handler(event, context):
         prefix = "/".join(key.split('/')[0:-1])
         return rebuild_package_index(prefix)
 
-    if key.endswith(".deb"):
-        # TODO: handle deletions
+    # If a deb was uploaded
+    if key.endswith(".deb") and event['Records'][0]['eventName'].startswith('ObjectCreated'):
         s3 = boto3.resource('s3')
         deb_obj = s3.Object(bucket_name=bucket, key=key)
         print("S3 Notification of new key. Ensuring cached control data exists: %s" % (str(deb_obj)))
         get_cached_control_data(deb_obj)
 
-    # If a package inside this bucket was updated, rebuild the index.
+    # If a package inside this bucket was updated (added or deleted), rebuild the index.
     if bucket == config.APT_REPO_BUCKET_NAME and key.endswith(".deb"):
         prefix = "/".join(key.split('/')[0:-1])
         rebuild_package_index(prefix)
