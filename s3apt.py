@@ -202,6 +202,8 @@ def lambda_handler(event, context):
     print("LAMBDA HANDLER - APT REPO SYNC")
     print("Received event: " + json.dumps(event, indent=2))
 
+    # Explicit event request to rebuild package index.  If the lambda is configured
+    # correctly this shouldn't really be needed.
     if event.get('action', None) == 'rebuild_package_index':
         event['prefix'] = event['prefix'].strip('/')
         return rebuild_package_index(event['prefix'])
