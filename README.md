@@ -5,8 +5,7 @@ s3apt
 Host Private Ubuntu Repos in S3
 
 This code watches S3 buckets for changes, and rebuilds the debian package index
-whenever something changes.  It is the cloud equivalent of
-```dpkg-scanpackages```.
+whenever something changes.  It is the cloud equivalent of *dpkg-scanpackages*.
 
 There are 2 parts to this: Lambda configuration and apt-get configuration
 
