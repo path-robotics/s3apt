@@ -1,4 +1,3 @@
-
 s3apt
 =====
 
@@ -20,14 +19,6 @@ Clone the repo.
 ```
 git clone https://github.com/szinck/s3apt.git
 cd s3apt
-```
-
-Install prerequisite software.
-
-```
-virtualenv venv
-. venv/bin/activate
-pip install -r requirements.txt
 ```
 
 Configure your bucket name.
@@ -60,3 +51,37 @@ Apt-get configuration
 
 For details on apt-get configuration see
 http://webscale.plumbing/managing-apt-repos-in-s3-using-lambda
+
+Testing
+-------
+
+Setup
+
+```
+virtualenv venv
+. venv/bin/activate
+pip install -r requirements.txt
+```
+
+Testing against your packages:
+
+If you specify the name of the package on the command line you can cause the
+code to generate a package index entry.
+
+```
+$ python s3apt.py elasticsearch-2.3.3.deb
+Package: elasticsearch
+Version: 2.3.3
+Section: web
+Priority: optional
+Architecture: all
+Depends: libc6, adduser
+Installed-Size: 30062
+Maintainer: Elasticsearch Team <info@elastic.co>
+Description: Elasticsearch is a distributed RESTful search engine built for the cloud. Reference documentation can be found at https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html and the 'Elasticsearch: The Definitive Guide' book can be found at https://www.elastic.co/guide/en/elasticsearch/guide/current/index.html
+Homepage: https://www.elastic.co/
+Size: 27426588
+MD5sum: e343866c166ca1ef69b9115d36deeae2
+SHA1: 8385dda7aa3870a3b13fc1df91d8b750d940700e
+SHA256: fa90c6aefc5e82e0e19cb0ec546b9a64fec354ede201cf24658ddcfe01762d92
+```
