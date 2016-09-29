@@ -43,7 +43,10 @@ def get_control_data(debfile):
 
     tar_file = tarfile.open(fileobj=control_fh, mode='r:gz')
 
-    control_data = tar_file.extractfile("./control").read().strip()
+    # control file can be named different things
+    control_file_name = [x for x in tar_file.getmembers() if x.name in ['control', './control']][0]
+
+    control_data = tar_file.extractfile(control_file_name).read().strip()
     # Strip out control fields with blank values.  This tries to allow folded
     # and multiline fields to pass through.  See the debian policy manual for
     # more info on folded and multiline fields.
@@ -237,7 +240,6 @@ def lambda_handler(event, context):
 
 if __name__ == "__main__":
     fname = sys.argv[1]
-    print("wuuf")
 
     ctrl = get_control_data(fname)
     pkg_rec = format_package_record(ctrl, fname)
