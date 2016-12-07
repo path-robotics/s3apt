@@ -140,7 +140,8 @@ def get_package_index_hash(prefix):
     """
     s3 = boto3.resource('s3')
     try:
-        package_index_obj = s3.Object(bucket_name=config.APT_REPO_BUCKET_NAME, key=prefix.strip('/') + '/Packages')
+        print("looking for existing Packages file: %sPackages" % prefix)
+        package_index_obj = s3.Object(bucket_name=config.APT_REPO_BUCKET_NAME, key=prefix + 'Packages')
         return package_index_obj.metadata.get('packages-hash', None)
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == '404':
@@ -164,9 +165,7 @@ def rebuild_package_index(prefix):
     deb_names = []
     deb_objs = []
 
-    filter_prefix = prefix
-    if not filter_prefix.endswith('/'):
-        filter_prefix += '/'
+    filter_prefix = prefix + '/'
 
     print("REBUILDING PACKAGE INDEX: %s" % (prefix))
     s3 = boto3.resource('s3')
