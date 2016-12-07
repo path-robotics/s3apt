@@ -175,6 +175,10 @@ def rebuild_package_index(prefix):
         deb_objs.append(obj)
         deb_names.append(obj.key.split('/')[-1])
 
+    if not len(deb_objs):
+        print("NOT BUILDING EMPTY PACKAGE INDEX")
+        return
+
     # See if we need to rebuild the package index
     metadata_pkghash = get_package_index_hash(filter_prefix)
     calcd_pkghash = calc_package_index_hash(deb_names)
