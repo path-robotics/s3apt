@@ -15,7 +15,7 @@ import os
 
 
 def checksums(fname):
-    
+
     fh = open(fname, "rb")
 
     md5 = hashlib.md5()
@@ -30,7 +30,7 @@ def checksums(fname):
         sha256.update(dat)
         if len(dat) < size:
             break
-            
+
     fh.close()
 
     return md5.hexdigest(), sha1.hexdigest(), sha256.hexdigest()
@@ -56,7 +56,7 @@ def get_control_data(debfile):
     for line in lines:
         # see if simple field
         if re.search(r"^\w[\w\d_-]+\s*:", line):
-            k, v = line.split(':', 1)     
+            k, v = line.split(':', 1)
             if v.strip() != "":
                 filtered.append(line)
         else:
@@ -98,7 +98,7 @@ def read_control_data(deb_obj):
             break
     fh.close()
     #os.close(fd)
-    
+
     try:
         ctrl = get_control_data(tmp)
         pkg_rec = format_package_record(ctrl, tmp)
@@ -115,7 +115,7 @@ def get_cached_control_data(deb_obj):
     """
     s3 = boto3.resource('s3')
     etag = deb_obj.e_tag.strip('"')
-    
+
     cache_obj = s3.Object(bucket_name=config.APT_REPO_BUCKET_NAME, key=config.CONTROL_DATA_CACHE_PREFIX + '/' + etag)
     exists = True
     try:
@@ -127,11 +127,11 @@ def get_cached_control_data(deb_obj):
             raise(e)
 
     if not exists:
-        control_data = read_control_data(deb_obj)        
+        control_data = read_control_data(deb_obj)
         cache_obj.put(Body=control_data)
 
     return control_data
-    
+
 def get_package_index_hash(prefix):
     """
     Returns the md5 hash of the names of all the packages in the index. This can be used
@@ -182,12 +182,12 @@ def rebuild_package_index(prefix):
     if metadata_pkghash == calcd_pkghash:
         print("PACKAGE INDEX ALREADY UP TO DATE")
         return
-    
+
     pkginfos = []
     for obj in deb_objs:
-        print(obj.key)   
+        print(obj.key)
 
-        pkginfo = get_cached_control_data(obj)    
+        pkginfo = get_cached_control_data(obj)
         pkginfo = pkginfo + "\n%s\n" % ("Filename: %s" % obj.key)
         pkginfos.append(pkginfo)
 
@@ -196,7 +196,7 @@ def rebuild_package_index(prefix):
     package_index_obj.put(Body="\n".join(sorted(pkginfos)), Metadata={'packages-hash': calcd_pkghash})
 
     print("DONE REBUILDING PACKAGE INDEX")
-    
+
 
 ## Lambda Entry Points
 
@@ -232,7 +232,7 @@ def lambda_handler(event, context):
     if bucket == config.APT_REPO_BUCKET_NAME and key.endswith(".deb"):
         prefix = "/".join(key.split('/')[0:-1])
         rebuild_package_index(prefix)
-    
+
     print("DONE")
 
 
