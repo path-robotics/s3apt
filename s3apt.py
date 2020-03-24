@@ -12,6 +12,7 @@ import hashlib
 import re
 import sys
 import os
+from botocore.client import Config
 
 
 def checksums(fname):
@@ -39,14 +40,15 @@ def checksums(fname):
 def get_control_data(debfile):
     ar = debian.arfile.ArFile(debfile)
 
-    control_fh = ar.getmember('control.tar.gz')
+    control_member = list(filter(lambda x: x.startswith('control.tar'), ar.getnames()))[0]
+    control_fh = ar.getmember(control_member)
 
-    tar_file = tarfile.open(fileobj=control_fh, mode='r:gz')
+    tar_file = tarfile.open(fileobj=control_fh, mode='r')
 
     # control file can be named different things
     control_file_name = [x for x in tar_file.getmembers() if x.name in ['control', './control']][0]
 
-    control_data = tar_file.extractfile(control_file_name).read().strip()
+    control_data = str(tar_file.extractfile(control_file_name).read().strip(), encoding='utf-8')
     # Strip out control fields with blank values.  This tries to allow folded
     # and multiline fields to pass through.  See the debian policy manual for
     # more info on folded and multiline fields.
@@ -119,7 +121,7 @@ def get_cached_control_data(deb_obj):
     cache_obj = s3.Object(bucket_name=config.APT_REPO_BUCKET_NAME, key=config.CONTROL_DATA_CACHE_PREFIX + '/' + etag)
     exists = True
     try:
-        control_data = cache_obj.get()['Body'].read()
+        control_data = str(cache_obj.get()['Body'].read(), encoding='utf-8')
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchKey':
             exists = False
@@ -155,7 +157,7 @@ def calc_package_index_hash(deb_names):
     we can use it for short-circuiting.
     """
     md5 = hashlib.md5()
-    md5.update("\n".join(sorted(deb_names)))
+    md5.update(bytes("\n".join(sorted(deb_names)), encoding='utf-8'))
     return md5.hexdigest()
 
 def rebuild_package_index(prefix):
@@ -201,6 +203,32 @@ def rebuild_package_index(prefix):
 
     print("DONE REBUILDING PACKAGE INDEX")
 
+def delete_new_versions(prefix, key):
+    s3 = boto3.client('s3')
+    keys = ["Versions", "DeleteMarkers"]
+    results = []
+    for k in keys:
+        response = s3.list_object_versions(Bucket=config.APT_REPO_BUCKET_NAME, Prefix=prefix)
+        if k in response:
+            response = response[k]
+        else:
+            continue
+        versions = [{"VersionId": r["VersionId"], "LastModified": r["LastModified"]} for r in response if r["Key"] == key]
+        results.extend(versions)
+    print("results", results)
+    if len(results) <= 1:
+        return False
+    sorted_versions = sorted(
+        results,
+        key=lambda x: x['LastModified']
+    )
+    print("sorted results", sorted_versions)
+    # Dont delete the oldest version
+    sorted_versions.pop(0)
+    print("minus oldest", sorted_versions)
+    s3.delete_objects(Bucket=config.APT_REPO_BUCKET_NAME,
+                      Delete={'Objects': [{"Key": key, "VersionId": v["VersionId"]} for v in sorted_versions]})
+    return True
 
 ## Lambda Entry Points
 
@@ -232,10 +260,11 @@ def lambda_handler(event, context):
         print("S3 Notification of new key. Ensuring cached control data exists: %s" % (str(deb_obj)))
         get_cached_control_data(deb_obj)
 
-    # If a package inside this bucket was updated (added or deleted), rebuild the index.
+    # If a package inside this bucket was updated delete the new versions, otherwise (added or deleted), rebuild the index.
     if bucket == config.APT_REPO_BUCKET_NAME and key.endswith(".deb"):
         prefix = "/".join(key.split('/')[0:-1])
-        rebuild_package_index(prefix)
+        if not delete_new_versions(prefix, key):
+            rebuild_package_index(prefix)
 
     print("DONE")
 
