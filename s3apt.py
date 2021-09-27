@@ -104,7 +104,7 @@ def read_control_data(deb_obj):
     try:
         ctrl = get_control_data(tmp)
         pkg_rec = format_package_record(ctrl, tmp)
-        #print(pkg_rec)
+        print(pkg_rec)
         return pkg_rec
     finally:
         os.remove(tmp)
@@ -244,7 +244,7 @@ def lambda_handler(event, context):
 
     # Get the object from the event and show its content type
     bucket = event['Records'][0]['s3']['bucket']['name']
-    key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key']).decode('utf8')
+    key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
 
 
     # If the Packages index changed or was deleted, try again to rebuild it to
