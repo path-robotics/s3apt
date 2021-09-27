@@ -33,7 +33,7 @@ Create a zip file of the code.
 
 ```
 zip  code.zip s3apt.py config.py
-(cd venv/lib/python2.7/site-packages/ ; zip -r ../../../../code.zip *)
+(cd venv/lib/python3.6/site-packages/ ; zip -r ../../../../code.zip *)
 ```
 
 Create a new lambda in the AWS Console, and upload the zip file.
