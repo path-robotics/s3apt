@@ -14,6 +14,7 @@ import sys
 import os
 from botocore.client import Config
 
+supported_extensions = ('.deb', '.ddeb')
 
 def checksums(fname):
 
@@ -172,7 +173,7 @@ def rebuild_package_index(prefix):
     print("REBUILDING PACKAGE INDEX: %s" % (prefix))
     s3 = boto3.resource('s3')
     for obj in s3.Bucket(config.APT_REPO_BUCKET_NAME).objects.filter(Prefix=filter_prefix):
-        if not obj.key.endswith(".deb"):
+        if not obj.key.endswith(supported_extensions):
             continue
         deb_objs.append(obj)
         deb_names.append(obj.key.split('/')[-1])
@@ -254,14 +255,14 @@ def lambda_handler(event, context):
         return rebuild_package_index(prefix)
 
     # If a deb was uploaded
-    if key.endswith(".deb") and event['Records'][0]['eventName'].startswith('ObjectCreated'):
+    if key.endswith(supported_extensions) and event['Records'][0]['eventName'].startswith('ObjectCreated'):
         s3 = boto3.resource('s3')
         deb_obj = s3.Object(bucket_name=bucket, key=key)
         print("S3 Notification of new key. Ensuring cached control data exists: %s" % (str(deb_obj)))
         get_cached_control_data(deb_obj)
 
     # If a package inside this bucket was updated delete the new versions, otherwise (added or deleted), rebuild the index.
-    if bucket == config.APT_REPO_BUCKET_NAME and key.endswith(".deb"):
+    if bucket == config.APT_REPO_BUCKET_NAME and key.endswith(supported_extensions):
         prefix = "/".join(key.split('/')[0:-1])
         if not delete_new_versions(prefix, key):
             rebuild_package_index(prefix)
