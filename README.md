@@ -29,7 +29,7 @@ echo 'deb [trusted=yes lang=en arch=amd64] s3://path-apt-repo bionic/' | sudo te
 ```
 Update your local package index:
 ```bash
-apt upgrade
+apt update
 ```
 
 Lambda Quick Start
@@ -70,6 +70,8 @@ zip code.zip s3apt.py config.py
 ```
 
 Create a new lambda in the AWS Console, and upload the zip file.
+
+Increase the timeout from the default of 3 seconds ( Configuration -> General Configuration -> Timeout) to something longer like 10 minutes (to allow the code time to re-index all the packages). 
 
 Set the lambda handler as **s3apt.lambda_handler** and configure triggers as
 below.  Note, there should be no leading slash before the name of the prefix.
@@ -145,9 +147,20 @@ SHA256: fa90c6aefc5e82e0e19cb0ec546b9a64fec354ede201cf24658ddcfe01762d92
 Fixing
 ------
 If the `Packages` file becomes corrupted by improperly built packages you can fix it by doing the following:
-- Identify the offending package by downloading the `Packages` file from s3.
-- Remove the offending package from the s3 bucket, as well as its corresponding `control-data-cache` entry (this will match the `MD5sum` from the `Packages` file).
-- Delete the `Packages` file.
+- Identify the offending package by downloading the `Packages` file from s3
+```bash
+aws s3 cp s3://my-bucket/bionic/Packages Packages
+```
+- Remove the offending package from the S3.  Because the bucket is versioned this will require you to pass the broken version ID for the object you wish to delete.  You can find the version number under the Versions tab of the object details page.
+```bash
+aws s3api delete-object --bucket <bucket_name> --key <distro>/<object_name> --version-id <version_id>
+aws s3api delete-object --bucket my-bucket --key bionic/global_sensor_optimization-4.0.0-Linux.deb --version-id QqcIbcm3RFCdUfqcLz9xNw61LOXd_7cr
+```
+- Delete the control-data-cache entry for the offending package.  This will match the MD5sum value from the offending package entry in the Packages file.
+- Delete the broken version of the Packages file from S3.
+```bash
+aws s3api delete-object --bucket my-bucket --key bionic/Packages --version-id QqcIbcm3RFCdUfqcLz9xNw61LOXd_7cr
+```
 - Rebuild the package index by sending the following JSON in the `Test` tab on the Lambda page.
 ```json
 {
