@@ -66,7 +66,7 @@ Create a zip file of the code.
 
 ```bash
 zip code.zip s3apt.py config.py
-(cd venv/lib/python3.6/site-packages/ ; zip -r ../../../../code.zip *)
+(cd venv/lib/python3.9/site-packages/ ; zip -r ../../../../code.zip *)
 ```
 
 Create a new lambda in the AWS Console, and upload the zip file.
