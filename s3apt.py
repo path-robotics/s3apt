@@ -119,7 +119,7 @@ def get_cached_control_data(deb_obj):
     s3 = boto3.resource('s3')
     etag = deb_obj.e_tag.strip('"')
 
-    cache_obj = s3.Object(bucket_name=config.APT_REPO_BUCKET_NAME, key=config.CONTROL_DATA_CACHE_PREFIX + '/' + etag)
+    cache_obj = s3.Object(bucket_name=config.APT_REPO_BUCKET_NAME, key=config.CONTROL_DATA_CACHE_PREFIX + '/'  + deb_obj.key.split('/')[-2] + '/' + etag)
     exists = True
     try:
         control_data = str(cache_obj.get()['Body'].read(), encoding='utf-8')
